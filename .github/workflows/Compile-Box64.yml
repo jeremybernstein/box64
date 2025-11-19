@@ -36,41 +36,13 @@ jobs:
               run: |
                   sudo apt-get update
                   sudo apt-get install -y git cmake make python3 patchelf p7zip wget
-                  echo "Downloading Android NDK r27c (Latest LTS)..."
-                  wget -q https://dl.google.com/android/repository/android-ndk-r27c-linux.zip
-                  unzip -qq android-ndk-r27c-linux.zip
+                  echo "Downloading Android NDK r26b..."
+                  wget -q https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
+                  unzip -qq android-ndk-r26b-linux.zip
                   
-            - name: Apply Android Bionic Compatibility Patch
-              run: |
-                  # Fix _NSIG_WORDS not defined in Android Bionic
-                  # Android's signal.h doesn't define _NSIG_WORDS like glibc does
-                  cat > bionic_signal_fix.patch << 'EOF'
-                  --- a/src/libtools/signal_private.h
-                  +++ b/src/libtools/signal_private.h
-                  @@ -17,6 +17,15 @@
-                   #include <sys/signal.h>
-                   #include <signal.h>
-                   
-                  +// Android Bionic compatibility: define _NSIG_WORDS if not present
-                  +#ifndef _NSIG_WORDS
-                  +  #ifndef _NSIG
-                  +    #define _NSIG 64
-                  +  #endif
-                  +  #define _NSIG_BPW (sizeof(unsigned long) * 8)
-                  +  #define _NSIG_WORDS ((_NSIG + _NSIG_BPW - 1) / _NSIG_BPW)
-                  +#endif
-                  +
-                   typedef struct my_sigset_s {
-                       unsigned long sig[_NSIG_WORDS];
-                   } my_sigset_t;
-                  EOF
-                  
-                  # Apply the patch
-                  patch -p1 < bionic_signal_fix.patch || echo "Patch may already be applied or code has changed"
-
             - name: Compile Box64 (Bionic Target - ${{ matrix.arch.name }})
               run: |
-                  NDK_COMPILER=$PWD/android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.arch.target }}-clang
+                  NDK_COMPILER=$PWD/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.arch.target }}-clang
                   mkdir build_${{ matrix.arch.name }} && cd build_${{ matrix.arch.name }}
                   cmake .. \
                       -DCMAKE_BUILD_TYPE=Release \

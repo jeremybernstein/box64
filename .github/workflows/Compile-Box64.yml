@@ -4,9 +4,9 @@ on:
     workflow_dispatch:
         inputs:
             box64_version_ref:
-                description: 'Enter a tag, branch, or commit (e.g., v0.3.2, v0.3.6) - Note: v0.3.3+ may have build issues'
+                description: 'Enter a tag, branch, or commit short 7 characters hash to build (e.g., v0.3.6)'
                 required: true
-                default: 'v0.3.2'
+                default: 'main'
     push:
         branches:
             - "main"
@@ -28,8 +28,8 @@ jobs:
             - name: Checkout Box64 Repository
               uses: actions/checkout@v4
               with:
-                  repository: ptitSeb/box64
-                  ref: ${{ github.event.inputs.box64_version_ref || 'v0.3.2' }}
+                  repository: miguelmazetto/box64-androidndk
+                  ref: ${{ github.event.inputs.box64_version_ref || 'main' }}
                   submodules: recursive
                   fetch-depth: 0
 
@@ -37,7 +37,7 @@ jobs:
               run: |
                   sudo apt-get update
                   sudo apt-get install -y git cmake make python3 patchelf p7zip wget
-                  echo "Downloading Android NDK r26b (LTS)..."
+                  echo "Downloading Android NDK r26b..."
                   wget -q https://dl.google.com/android/repository/android-ndk-r26b-linux.zip
                   unzip -qq android-ndk-r26b-linux.zip
                   
@@ -57,14 +57,14 @@ jobs:
               id: package
               run: |
                   # --- Intelligent Version Naming Logic ---
-                  REF_NAME_RAW="${{ github.event.inputs.box64_version_ref || 'v0.3.2' }}"
+                  REF_NAME_RAW="${{ github.event.inputs.box64_version_ref || 'main' }}"
                   SHORT_COMMIT=$(git rev-parse --short HEAD)
                   
                   # Check if the reference is a release tag (starts with 'v' and contains at least one '.').
                   if [[ "$REF_NAME_RAW" == v*.* ]]; then
                       # --- THIS IS A RELEASE BUILD ---
                       echo "Detected a Release build for tag: $REF_NAME_RAW"
-                      VERSION_NAME=$(echo "$REF_NAME_RAW" | sed 's/v//') # Remove the 'v' prefix, e.g., "0.3.2"
+                      VERSION_NAME=$(echo "$REF_NAME_RAW" | sed 's/v//') # Remove the 'v' prefix, e.g., "0.3.6"
                       VERSION_CODE=0
                       DESCRIPTION="Box64 ${VERSION_NAME} Release for ${{ matrix.arch.name }}."
                       ARTIFACT_NAME="Box64-${VERSION_NAME}-${{ matrix.arch.name }}"
